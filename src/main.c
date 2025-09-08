@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "game.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
@@ -8,13 +9,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-// I don't like it being odd, but it's easier to contain
 const int SCREEN_WIDTH = 1600;
 const int SCREEN_HEIGHT = 1280;
-
-void drawCells(SDL_Surface *screen) {
-  SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 128, 128, 128));
-}
 
 int main(void) {
   SDL_Window *win = NULL;
@@ -33,18 +29,35 @@ int main(void) {
   currentState->exitTrigger = 0;
   currentState->pause = 0;
 
+  // Calculate last frame time and FPS
+  int fps = 0;
+  Uint32 lastFrameTime = 0;
+  Uint32 currentFrameTime = 0;
+
   while (!currentState->exitTrigger) {
+    currentFrameTime = SDL_GetTicks();
+    if (currentFrameTime - lastFrameTime >= 1000) {
+      // Display fps in the window title
+      char title[50];
+      snprintf(title, sizeof(title), "Game - FPS: %d", fps);
+      SDL_SetWindowTitle(win, title);
+
+      fps = 0;
+      lastFrameTime = currentFrameTime;
+    }
+    fps++;
+
     handleEvents(currentState);
+    drawGame(screen);
 
     SDL_UpdateWindowSurface(win);
 
     if (currentState->pause) {
-      // Only run at 30 FPS when paused
+      // run at 30 fps when paused
       SDL_Delay(1000 / 30);
       continue;
     }
 
-    // Run at 60 FPS when unpaused
     SDL_Delay(1000 / 60);
   }
 
