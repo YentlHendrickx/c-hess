@@ -2,18 +2,18 @@
 #define CONFIG_H
 
 // Screen dimensions
-#define SCREEN_WIDTH 1600
-#define SCREEN_HEIGHT 1280
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 600
 
 // Board configuration
 #define BOARD_SIZE 8
-#define BOARD_OFFSET 20
+#define BOARD_OFFSET 0
 #define BOARD_BORDER_WIDTH 2
 
 // Piece configuration
 #define PIECE_WIDTH 16
 #define PIECE_HEIGHT 32
-#define PIECE_SCALING 4.5
+#define PIECE_SCALING 2.25
 
 // File paths
 #define ASSETS_PATH "assets/pieces/"
