@@ -1,48 +1,104 @@
 #include "game.h"
 #include <SDL2/SDL_ttf.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-void fillBackground(SDL_Surface *screen) {
-  SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 180, 180, 180));
-}
+const int EMPTY = 0;
+const int NONE = 0;
 
-// TODO: move the drawing of everything into it's own file (render.c maybe?)
-void drawBoard(SDL_Surface *screen) {
-  fillBackground(screen);
+const int PAWN = 1;
+const int KNIGHT = 2;
+const int ROOK = 3;
+const int BISHOP = 4;
+const int QUEEN = 5;
+const int KING = 6;
 
-  // Prevent non square boards by using the smallest side
-  int smallestSide = (screen->w < screen->h) ? screen->w : screen->h;
-  smallestSide -= 40; // Account for offset
-  int cellSize = smallestSide / 8;
+const int WHITE = 1;
+const int BLACK = 2;
 
-  // Board outline, offset by 20 pixels from each edge
-  SDL_Rect boardRect = {20, 20, smallestSide, smallestSide};
-  SDL_FillRect(screen, &boardRect, SDL_MapRGB(screen->format, 0, 0, 0));
+const int THEME_DEFAULT = 0;
+const int THEME_WOOD = 1;
 
-  for (int i = 1; i < 8; i++) {
-    // Vertical lines
-    SDL_Rect vLine = {boardRect.x + i * cellSize, boardRect.y, 2, boardRect.h};
-    SDL_FillRect(screen, &vLine, SDL_MapRGB(screen->format, 255, 255, 255));
+// Global game state
+static struct GameState g_game_state = {0};
 
-    // Horizontal lines
-    SDL_Rect hLine = {boardRect.x, boardRect.y + i * cellSize, boardRect.w, 2};
-    SDL_FillRect(screen, &hLine, SDL_MapRGB(screen->format, 255, 255, 255));
-  }
-
-  // Next we fill the squares
-  for (int row = 0; row < 8; row++) {
-    for (int col = 0; col < 8; col++) {
-      if ((row + col) % 2 == 1) { // Dark squares
-        SDL_Rect square = {boardRect.x + col * cellSize,
-                           boardRect.y + row * cellSize, cellSize, cellSize};
-        SDL_FillRect(screen, &square, SDL_MapRGB(screen->format, 0, 0, 0));
-        continue;
-      }
-
-      SDL_Rect square = {boardRect.x + col * cellSize,
-                         boardRect.y + row * cellSize, cellSize, cellSize};
-      SDL_FillRect(screen, &square, SDL_MapRGB(screen->format, 240, 240, 240));
+int init_game_state(void) {
+  // Initialize board with empty pieces
+  for (int row = 0; row < BOARD_SIZE; row++) {
+    for (int col = 0; col < BOARD_SIZE; col++) {
+      g_game_state.board.squares[row][col].piece.type = EMPTY;
+      g_game_state.board.squares[row][col].piece.color = NONE;
+      g_game_state.board.squares[row][col].piece.theme = THEME_DEFAULT;
+      g_game_state.board.squares[row][col].row = row;
+      g_game_state.board.squares[row][col].column = col;
     }
   }
+
+  g_game_state.currentTurn = WHITE;
+  g_game_state.selectedPieceRow = -1;
+  g_game_state.selectedPieceCol = -1;
+
+  // Clear possible moves
+  for (int row = 0; row < BOARD_SIZE; row++) {
+    for (int col = 0; col < BOARD_SIZE; col++) {
+      g_game_state.possibleMoves[row][col] = 0;
+    }
+  }
+
+  return ERROR_NONE;
 }
 
-void drawGame(SDL_Surface *screen) { drawBoard(screen); }
+void cleanup_game_state(void) {
+  // Nothing to cleanup for now, but placeholder for future cleanup
+}
+
+int updateState(void) { return 0; }
+
+// Validation functions
+int is_valid_position(int row, int col) {
+  return (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE);
+}
+
+int is_valid_piece_type(int type) { return (type >= EMPTY && type <= KING); }
+
+int is_valid_color(int color) {
+  return (color == NONE || color == WHITE || color == BLACK);
+}
+
+int is_valid_theme(int theme) {
+  return (theme == THEME_DEFAULT || theme == THEME_WOOD);
+}
+
+// Board manipulation functions
+struct Piece *get_piece_at(struct Board *board, int row, int col) {
+  if (!board || !is_valid_position(row, col)) {
+    return NULL;
+  }
+  return &board->squares[row][col].piece;
+}
+
+int set_piece_at(struct Board *board, int row, int col, struct Piece piece) {
+  if (!board || !is_valid_position(row, col)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  if (!is_valid_piece_type(piece.type) || !is_valid_color(piece.color) ||
+      !is_valid_theme(piece.theme)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  board->squares[row][col].piece = piece;
+  return ERROR_NONE;
+}
+
+int clear_piece_at(struct Board *board, int row, int col) {
+  if (!board || !is_valid_position(row, col)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  board->squares[row][col].piece.type = EMPTY;
+  board->squares[row][col].piece.color = NONE;
+  board->squares[row][col].piece.theme = THEME_DEFAULT;
+
+  return ERROR_NONE;
+}

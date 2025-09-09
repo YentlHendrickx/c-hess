@@ -1,9 +1,15 @@
 CC := clang
 CFLAGS := -Wall -Wextra -Werror -Wpedantic -std=c11 -g $(shell sdl2-config --cflags)
-LDFLAGS := $(shell sdl2-config --libs)
+LDFLAGS := $(shell sdl2-config --libs) -lSDL2_image
 
-SRC_FILES := src/engine.c src/game.c src/main.c
+# Source files
+SRC_FILES := src/engine.c src/game.c src/main.c src/renderer.c src/input.c src/resources.c
+
+# Target
 TARGET := out/chess
+
+# Create output directory if it doesn't exist
+$(shell mkdir -p out)
 
 all: $(TARGET)
 
@@ -12,3 +18,13 @@ $(TARGET): $(SRC_FILES)
 
 clean:
 	rm -f $(TARGET)
+
+# Debug build
+debug: CFLAGS += -DDEBUG -O0
+debug: $(TARGET)
+
+# Release build
+release: CFLAGS += -O2 -DNDEBUG
+release: $(TARGET)
+
+.PHONY: all clean debug release
