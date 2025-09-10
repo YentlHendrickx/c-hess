@@ -2,6 +2,7 @@
 A simple chess game built in C using SDL2. This is still very much a work in progress.
 
 ![C-Hess Screenshot](./docs/screenshot.png)
+![C-Hess Screenshot 2](./docs/screenshot_2.png)
 
 ## Compiling
 To compile the project, make sure you have SDL2 installed on your system. Then, run the following command in the terminal:
