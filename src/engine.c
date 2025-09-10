@@ -37,20 +37,3 @@ void cleanup_engine(SDL_Window *win) {
   }
   SDL_Quit();
 }
-
-// Legacy functions for backward compatibility
-int init(SDL_Window **win, SDL_Surface **screen, int width, int height) {
-  ErrorCode result = init_engine(win, screen, width, height);
-  return (result == ERROR_NONE) ? 0 : 1;
-}
-
-void cleanup(SDL_Window *win) { cleanup_engine(win); }
-
-void handleEvents(InputState *state) {
-  // This function is now just a wrapper around the input module
-  // The actual implementation is in input.c
-  // This maintains backward compatibility
-  if (state) {
-    handle_events(state);
-  }
-}

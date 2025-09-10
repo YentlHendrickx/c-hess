@@ -13,13 +13,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-void handleInput(InputState *currentState) { handleEvents(currentState); }
-
-int updateGame(void) { return updateState(); }
-
 void renderGame(SDL_Surface *screen) {
-  static int firstRun = 1;
-
   // Clear screen
   clearScreen(screen);
   drawBackground(screen);
@@ -27,55 +21,50 @@ void renderGame(SDL_Surface *screen) {
   // Draw board
   drawBoard(screen);
 
-  // Draw test pieces for demonstration
-  if (firstRun) {
-    // Test pieces with different themes
-    drawPiece(screen, 0, 0, &(struct Piece){ROOK, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 1, &(struct Piece){KNIGHT, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 2, &(struct Piece){BISHOP, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 3, &(struct Piece){QUEEN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 4, &(struct Piece){KING, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 5, &(struct Piece){BISHOP, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 6, &(struct Piece){KNIGHT, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 0, 7, &(struct Piece){ROOK, BLACK, THEME_DEFAULT});
+  // Test pieces with different themes
+  drawPiece(screen, 0, 0, &(struct Piece){ROOK, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 1, &(struct Piece){KNIGHT, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 2, &(struct Piece){BISHOP, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 3, &(struct Piece){QUEEN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 4, &(struct Piece){KING, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 5, &(struct Piece){BISHOP, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 6, &(struct Piece){KNIGHT, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 0, 7, &(struct Piece){ROOK, BLACK, THEME_DEFAULT});
 
-    drawPiece(screen, 1, 0, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 1, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 2, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 3, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 4, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 5, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 6, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
-    drawPiece(screen, 1, 7, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 0, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 1, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 2, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 3, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 4, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 5, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 6, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
+  drawPiece(screen, 1, 7, &(struct Piece){PAWN, BLACK, THEME_DEFAULT});
 
-    drawPiece(screen, 7, 0, &(struct Piece){ROOK, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 1, &(struct Piece){KNIGHT, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 2, &(struct Piece){BISHOP, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 3, &(struct Piece){QUEEN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 4, &(struct Piece){KING, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 5, &(struct Piece){BISHOP, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 6, &(struct Piece){KNIGHT, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 7, 7, &(struct Piece){ROOK, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 0, &(struct Piece){ROOK, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 1, &(struct Piece){KNIGHT, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 2, &(struct Piece){BISHOP, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 3, &(struct Piece){QUEEN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 4, &(struct Piece){KING, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 5, &(struct Piece){BISHOP, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 6, &(struct Piece){KNIGHT, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 7, 7, &(struct Piece){ROOK, WHITE, THEME_DEFAULT});
 
-    drawPiece(screen, 6, 0, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 1, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 2, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 3, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 4, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 5, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 6, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-    drawPiece(screen, 6, 7, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
-
-    firstRun = 0;
-  }
+  drawPiece(screen, 6, 0, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 1, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 2, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 3, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 4, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 5, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 6, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
+  drawPiece(screen, 6, 7, &(struct Piece){PAWN, WHITE, THEME_DEFAULT});
 }
 
 void gameLoop(InputState *currentState, SDL_Surface *screen) {
   // 1. Handle input
-  handleInput(currentState);
+  handle_events(currentState);
 
   // 2. Update game state
-  int updates = updateGame();
+  int updates = updateState();
 
   static int firstRun = 1;
   // 3. Render everything
