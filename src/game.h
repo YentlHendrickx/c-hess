@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include "config.h"
+#include "input.h"
 
 // Piece types and colors
 extern const int EMPTY;
@@ -41,13 +42,16 @@ typedef struct {
   board_t board;
   int current_turn; // 1 = white, 2 = black
   int move_count;
+  int game_over; // 0 = ongoing, 1 = white wins, 2 = black wins, 3 = draw
+  int render_needed; // 1 = needs re-render, 0 = no changes
   int selected_piece_row;
   int selected_piece_col;
   int possible_moves[8][8]; // 1 = possible move, 0 = not possible
+  input_state_t *input_state;
 } game_state_t;
 
 // Game state functions
-int update_state(void);
+void update_state(void);
 game_state_t* init_game_state(void);
 void cleanup_game_state(void);
 

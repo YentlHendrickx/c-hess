@@ -69,12 +69,12 @@ void draw_board(SDL_Surface *screen) {
   for (int i = 1; i < BOARD_SIZE; i++) {
     // Vertical lines
     SDL_Rect v_line = {board_rect.x + i * cell_size, board_rect.y,
-                      BOARD_BORDER_WIDTH, board_rect.h};
+                       BOARD_BORDER_WIDTH, board_rect.h};
     SDL_FillRect(screen, &v_line, SDL_MapRGB(screen->format, COLOR_WHITE));
 
     // Horizontal lines
     SDL_Rect h_line = {board_rect.x, board_rect.y + i * cell_size, board_rect.w,
-                      BOARD_BORDER_WIDTH};
+                       BOARD_BORDER_WIDTH};
     SDL_FillRect(screen, &h_line, SDL_MapRGB(screen->format, COLOR_WHITE));
   }
 
@@ -100,7 +100,6 @@ void draw_piece(SDL_Surface *screen, int row, int col, struct piece_t *piece) {
   }
 
   if (piece->type == EMPTY || piece->color == NONE) {
-    fprintf(stderr, "No piece to draw at (%d, %d)\n", row, col);
     return; // Nothing to draw
   }
 
@@ -125,9 +124,6 @@ void draw_piece(SDL_Surface *screen, int row, int col, struct piece_t *piece) {
       square_rect.y + (square_rect.h - PIECE_HEIGHT * PIECE_SCALING) / 2,
       PIECE_WIDTH * PIECE_SCALING, PIECE_HEIGHT * PIECE_SCALING};
 
-  printf("Drawing piece type %d at (%d, %d) to screen at (%d, %d) with size "
-         "(%d, %d)\n",
-         piece->type, row, col, dest_rect.x, dest_rect.y, dest_rect.w, dest_rect.h);
   SDL_BlitScaled(sprite_map, &src_rect, screen, &dest_rect);
 }
 
@@ -146,7 +142,7 @@ void draw_all_pieces(SDL_Surface *screen, board_t *board) {
 }
 
 void draw_possible_moves(SDL_Surface *screen,
-                       int possible_moves[BOARD_SIZE][BOARD_SIZE]) {
+                         int possible_moves[BOARD_SIZE][BOARD_SIZE]) {
   if (!screen || !possible_moves)
     return;
 

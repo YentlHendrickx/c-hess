@@ -22,6 +22,36 @@ const int THEME_WOOD = 1;
 // Global game state
 static game_state_t g_game_state = {0};
 
+void init_standard_board(void) {
+  int initial_positions[8][8] = {
+      {ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK},
+      {PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN},
+      {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+      {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+      {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+      {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+      {PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN},
+      {ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK}};
+
+  for (int col = 0; col < BOARD_SIZE; col++) {
+    /// WHITE
+    g_game_state.board.squares[7][col].piece.type = initial_positions[0][col];
+    g_game_state.board.squares[7][col].piece.color = WHITE;
+
+    // Pawns
+    g_game_state.board.squares[6][col].piece.type = initial_positions[1][col];
+    g_game_state.board.squares[6][col].piece.color = WHITE;
+
+    /// BLACK
+    g_game_state.board.squares[0][col].piece.type = initial_positions[7][col];
+    g_game_state.board.squares[0][col].piece.color = BLACK;
+
+    // Pawns
+    g_game_state.board.squares[1][col].piece.type = initial_positions[6][col];
+    g_game_state.board.squares[1][col].piece.color = BLACK;
+  }
+}
+
 game_state_t *init_game_state(void) {
   // Initialize board with empty pieces
   for (int row = 0; row < BOARD_SIZE; row++) {
@@ -37,7 +67,10 @@ game_state_t *init_game_state(void) {
   g_game_state.current_turn = WHITE;
   g_game_state.selected_piece_row = -1;
   g_game_state.selected_piece_col = -1;
-  g_game_state.move_count = -1; // Indicates game just started
+  g_game_state.game_over = 0;     // Game ongoing
+  g_game_state.move_count = -1;   // Indicates game just started
+  g_game_state.render_needed = 1; // Initial render needed
+  g_game_state.input_state = malloc(sizeof(input_state_t));
 
   // Clear possible moves
   for (int row = 0; row < BOARD_SIZE; row++) {
@@ -46,6 +79,9 @@ game_state_t *init_game_state(void) {
     }
   }
 
+  // Assign standard chess starting positions
+  init_standard_board();
+
   return &g_game_state;
 }
 
@@ -53,13 +89,17 @@ void cleanup_game_state(void) {
   // Nothing to cleanup for now, but placeholder for future cleanup
 }
 
-int update_state(void) {
+void update_state(void) {
   if (g_game_state.move_count == -1) {
     printf("Game started. White's turn.\n");
     g_game_state.move_count++;
   }
 
-  return 0;
+  if (g_game_state.input_state->mouse_clicked) {
+    printf("Mouse clicked at (%d, %d)\n", g_game_state.input_state->mouse_x,
+           g_game_state.input_state->mouse_y);
+    g_game_state.input_state->mouse_clicked = 0; // Reset click state
+  }
 }
 
 // Validation functions
