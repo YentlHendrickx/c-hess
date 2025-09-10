@@ -1,4 +1,5 @@
 #include "game.h"
+#include "renderer.h"
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,16 +90,78 @@ void cleanup_game_state(void) {
   // Nothing to cleanup for now, but placeholder for future cleanup
 }
 
-void update_state(void) {
+void find_piece_by_coordinates(SDL_Surface *screen, int x, int y) {
+  int cell_size = get_cell_size(screen);
+  int col = x / cell_size;
+  int row = y / cell_size;
+
+  if (is_valid_position(row, col)) {
+    struct piece_t *piece = get_piece_at(&g_game_state.board, row, col);
+    if (piece && piece->type != EMPTY) {
+      g_game_state.selected_piece_row = row;
+      g_game_state.selected_piece_col = col;
+      printf("Selected piece at (%d, %d): type %d, color %d\n", row, col,
+             piece->type, piece->color);
+    } else {
+      g_game_state.selected_piece_row = -1;
+      g_game_state.selected_piece_col = -1;
+      printf("No piece at (%d, %d)\n", row, col);
+    }
+
+    return;
+  }
+
+  g_game_state.selected_piece_row = -1;
+  g_game_state.selected_piece_col = -1;
+  printf("Clicked outside board at (%d, %d)\n", x, y);
+}
+
+void handle_mouse_click(SDL_Surface *screen, int x, int y) {
+  printf("Mouse clicked at (%d, %d)\n", g_game_state.input_state->mouse_x,
+         g_game_state.input_state->mouse_y);
+  find_piece_by_coordinates(screen, x, y);
+  if (g_game_state.selected_piece_row != -1 &&
+      g_game_state.selected_piece_col != -1) {
+    printf("Calculating possible moves for selected piece\n");
+
+    // TODO: Implement real move calculation logic
+    // For now, just mark all squares as possible moves around the piece
+    int sel_row = g_game_state.selected_piece_row;
+    int sel_col = g_game_state.selected_piece_col;
+    for (int row = 0; row < BOARD_SIZE; row++) {
+      for (int col = 0; col < BOARD_SIZE; col++) {
+        // Simple logic: mark adjacent squares as possible moves
+        if ((abs(row - sel_row) <= 1) && (abs(col - sel_col) <= 1) &&
+            !(row == sel_row && col == sel_col)) {
+          g_game_state.possible_moves[row][col] = 1;
+        } else {
+          g_game_state.possible_moves[row][col] = 0;
+        }
+      }
+    }
+  } else {
+    printf("No piece selected, clearing possible moves\n");
+    // Clear possible moves if no piece selected
+    for (int row = 0; row < BOARD_SIZE; row++) {
+      for (int col = 0; col < BOARD_SIZE; col++) {
+        g_game_state.possible_moves[row][col] = 0;
+      }
+    }
+  }
+
+  g_game_state.input_state->mouse_clicked = 0; // Reset click state
+}
+
+void update_state(SDL_Surface *screen) {
   if (g_game_state.move_count == -1) {
     printf("Game started. White's turn.\n");
     g_game_state.move_count++;
   }
 
   if (g_game_state.input_state->mouse_clicked) {
-    printf("Mouse clicked at (%d, %d)\n", g_game_state.input_state->mouse_x,
-           g_game_state.input_state->mouse_y);
-    g_game_state.input_state->mouse_clicked = 0; // Reset click state
+    handle_mouse_click(screen, g_game_state.input_state->mouse_x,
+                       g_game_state.input_state->mouse_y);
+    g_game_state.render_needed = 1; // Mark for re-render
   }
 }
 

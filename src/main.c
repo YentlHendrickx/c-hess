@@ -13,14 +13,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-void render_game(SDL_Surface *screen, board_t *board) {
+void render_game(SDL_Surface *screen, game_state_t *state) {
   // Clear
   clear_screen(screen);
 
   // Draw
   draw_background(screen);
   draw_board(screen);
-  draw_all_pieces(screen, board);
+  draw_all_pieces(screen, &state->board);
+  draw_possible_moves(screen, state->possible_moves);
 }
 
 void game_loop(input_state_t *current_state, SDL_Surface *screen,
@@ -29,14 +30,14 @@ void game_loop(input_state_t *current_state, SDL_Surface *screen,
   handle_events(current_state);
 
   // 2. Update game state
-  update_state();
+  update_state(screen);
 
   // 3. Render if called for
   if (!state->render_needed) {
     return;
   }
 
-  render_game(screen, &state->board);
+  render_game(screen, state);
   state->render_needed = 0; // Reset render flag for next frame
 }
 

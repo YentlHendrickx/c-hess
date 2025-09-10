@@ -51,7 +51,7 @@ typedef struct {
 } game_state_t;
 
 // Game state functions
-void update_state(void);
+void update_state(SDL_Surface* screen);
 game_state_t* init_game_state(void);
 void cleanup_game_state(void);
 
