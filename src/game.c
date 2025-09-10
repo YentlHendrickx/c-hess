@@ -20,9 +20,9 @@ const int THEME_DEFAULT = 0;
 const int THEME_WOOD = 1;
 
 // Global game state
-static struct GameState g_game_state = {0};
+static game_state_t g_game_state = {0};
 
-int init_game_state(void) {
+game_state_t *init_game_state(void) {
   // Initialize board with empty pieces
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
@@ -34,25 +34,33 @@ int init_game_state(void) {
     }
   }
 
-  g_game_state.currentTurn = WHITE;
-  g_game_state.selectedPieceRow = -1;
-  g_game_state.selectedPieceCol = -1;
+  g_game_state.current_turn = WHITE;
+  g_game_state.selected_piece_row = -1;
+  g_game_state.selected_piece_col = -1;
+  g_game_state.move_count = -1; // Indicates game just started
 
   // Clear possible moves
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
-      g_game_state.possibleMoves[row][col] = 0;
+      g_game_state.possible_moves[row][col] = 0;
     }
   }
 
-  return ERROR_NONE;
+  return &g_game_state;
 }
 
 void cleanup_game_state(void) {
   // Nothing to cleanup for now, but placeholder for future cleanup
 }
 
-int updateState(void) { return 0; }
+int update_state(void) {
+  if (g_game_state.move_count == -1) {
+    printf("Game started. White's turn.\n");
+    g_game_state.move_count++;
+  }
+
+  return 0;
+}
 
 // Validation functions
 int is_valid_position(int row, int col) {
@@ -70,14 +78,14 @@ int is_valid_theme(int theme) {
 }
 
 // Board manipulation functions
-struct Piece *get_piece_at(struct Board *board, int row, int col) {
+struct piece_t *get_piece_at(board_t *board, int row, int col) {
   if (!board || !is_valid_position(row, col)) {
     return NULL;
   }
   return &board->squares[row][col].piece;
 }
 
-int set_piece_at(struct Board *board, int row, int col, struct Piece piece) {
+int set_piece_at(board_t *board, int row, int col, struct piece_t piece) {
   if (!board || !is_valid_position(row, col)) {
     return ERROR_INVALID_INPUT;
   }
@@ -91,7 +99,7 @@ int set_piece_at(struct Board *board, int row, int col, struct Piece piece) {
   return ERROR_NONE;
 }
 
-int clear_piece_at(struct Board *board, int row, int col) {
+int clear_piece_at(board_t *board, int row, int col) {
   if (!board || !is_valid_position(row, col)) {
     return ERROR_INVALID_INPUT;
   }

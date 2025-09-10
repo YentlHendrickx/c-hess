@@ -12,13 +12,13 @@ typedef struct {
     int mouse_y;
     int mouse_clicked;
     int key_pressed[256]; // Track key states
-} InputState;
+} input_state_t;
 
 // Input handling functions
-void init_input_state(InputState* state);
-void handle_events(InputState* state);
-void handle_quit_event(InputState* state);
-void handle_keydown_event(InputState* state, SDL_Keysym keysym);
-void handle_mouse_event(InputState* state, SDL_Event* event);
+void init_input_state(input_state_t* state);
+void handle_events(input_state_t* state);
+void handle_quit_event(input_state_t* state);
+void handle_keydown_event(input_state_t* state, SDL_Keysym keysym);
+void handle_mouse_event(input_state_t* state, SDL_Event* event);
 
 #endif // INPUT_H

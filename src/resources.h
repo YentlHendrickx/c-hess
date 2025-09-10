@@ -13,10 +13,10 @@ typedef struct {
     SDL_Surface* white_wood_sheet;
     SDL_Surface* black_wood_sheet;
     int initialized;
-} ResourceManager;
+} resource_manager_t;
 
 // Global resource manager instance
-extern ResourceManager g_resources;
+extern resource_manager_t g_resources;
 
 // Resource management functions
 ErrorCode init_resources(void);

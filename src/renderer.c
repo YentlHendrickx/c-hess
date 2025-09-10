@@ -16,13 +16,13 @@ ErrorCode init_renderer(void) {
 
 void cleanup_renderer(void) { IMG_Quit(); }
 
-void clearScreen(SDL_Surface *screen) {
+void clear_screen(SDL_Surface *screen) {
   if (!screen)
     return;
   SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, COLOR_BLACK));
 }
 
-void drawBackground(SDL_Surface *screen) {
+void draw_background(SDL_Surface *screen) {
   if (!screen)
     return;
   SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, COLOR_DARK_GRAY));
@@ -45,37 +45,37 @@ SDL_Rect get_square_rect(SDL_Surface *screen, int row, int col) {
     return rect;
   }
 
-  int cellSize = get_cell_size(screen);
-  rect.x = BOARD_OFFSET + col * cellSize;
-  rect.y = BOARD_OFFSET + row * cellSize;
-  rect.w = cellSize;
-  rect.h = cellSize;
+  int cell_size = get_cell_size(screen);
+  rect.x = BOARD_OFFSET + col * cell_size;
+  rect.y = BOARD_OFFSET + row * cell_size;
+  rect.w = cell_size;
+  rect.h = cell_size;
 
   return rect;
 }
 
-void drawBoard(SDL_Surface *screen) {
+void draw_board(SDL_Surface *screen) {
   if (!screen)
     return;
 
-  int cellSize = get_cell_size(screen);
-  int boardSize = cellSize * BOARD_SIZE;
+  int cell_size = get_cell_size(screen);
+  int board_size = cell_size * BOARD_SIZE;
 
   // Board outline, offset by BOARD_OFFSET pixels from each edge
-  SDL_Rect boardRect = {BOARD_OFFSET, BOARD_OFFSET, boardSize, boardSize};
-  SDL_FillRect(screen, &boardRect, SDL_MapRGB(screen->format, COLOR_BLACK));
+  SDL_Rect board_rect = {BOARD_OFFSET, BOARD_OFFSET, board_size, board_size};
+  SDL_FillRect(screen, &board_rect, SDL_MapRGB(screen->format, COLOR_BLACK));
 
   // Draw grid lines
   for (int i = 1; i < BOARD_SIZE; i++) {
     // Vertical lines
-    SDL_Rect vLine = {boardRect.x + i * cellSize, boardRect.y,
-                      BOARD_BORDER_WIDTH, boardRect.h};
-    SDL_FillRect(screen, &vLine, SDL_MapRGB(screen->format, COLOR_WHITE));
+    SDL_Rect v_line = {board_rect.x + i * cell_size, board_rect.y,
+                      BOARD_BORDER_WIDTH, board_rect.h};
+    SDL_FillRect(screen, &v_line, SDL_MapRGB(screen->format, COLOR_WHITE));
 
     // Horizontal lines
-    SDL_Rect hLine = {boardRect.x, boardRect.y + i * cellSize, boardRect.w,
+    SDL_Rect h_line = {board_rect.x, board_rect.y + i * cell_size, board_rect.w,
                       BOARD_BORDER_WIDTH};
-    SDL_FillRect(screen, &hLine, SDL_MapRGB(screen->format, COLOR_WHITE));
+    SDL_FillRect(screen, &h_line, SDL_MapRGB(screen->format, COLOR_WHITE));
   }
 
   // Fill the squares with alternating colors
@@ -93,9 +93,9 @@ void drawBoard(SDL_Surface *screen) {
   }
 }
 
-void drawPiece(SDL_Surface *screen, int row, int col, struct Piece *piece) {
+void draw_piece(SDL_Surface *screen, int row, int col, struct piece_t *piece) {
   if (!screen || !piece || !is_valid_position(row, col)) {
-    fprintf(stderr, "Invalid parameters to drawPiece\n");
+    fprintf(stderr, "Invalid parameters to draw_piece\n");
     return;
   }
 
@@ -105,9 +105,9 @@ void drawPiece(SDL_Surface *screen, int row, int col, struct Piece *piece) {
   }
 
   // Get the appropriate sprite sheet from resource manager
-  SDL_Surface *spriteMap =
+  SDL_Surface *sprite_map =
       get_piece_sprite(piece->type, piece->color, piece->theme);
-  if (!spriteMap) {
+  if (!sprite_map) {
     fprintf(stderr,
             "Failed to get sprite for piece type %d, color %d, theme %d\n",
             piece->type, piece->color, piece->theme);
@@ -115,44 +115,44 @@ void drawPiece(SDL_Surface *screen, int row, int col, struct Piece *piece) {
   }
 
   // Calculate source rectangle
-  int srcX = PIECE_WIDTH * (piece->type - 1);
-  SDL_Rect srcRect = {srcX, 0, PIECE_WIDTH, PIECE_HEIGHT};
+  int src_x = PIECE_WIDTH * (piece->type - 1);
+  SDL_Rect src_rect = {src_x, 0, PIECE_WIDTH, PIECE_HEIGHT};
 
   // Calculate destination rectangle
-  SDL_Rect squareRect = get_square_rect(screen, row, col);
-  SDL_Rect destRect = {
-      squareRect.x + (squareRect.w - PIECE_WIDTH * PIECE_SCALING) / 2,
-      squareRect.y + (squareRect.h - PIECE_HEIGHT * PIECE_SCALING) / 2,
+  SDL_Rect square_rect = get_square_rect(screen, row, col);
+  SDL_Rect dest_rect = {
+      square_rect.x + (square_rect.w - PIECE_WIDTH * PIECE_SCALING) / 2,
+      square_rect.y + (square_rect.h - PIECE_HEIGHT * PIECE_SCALING) / 2,
       PIECE_WIDTH * PIECE_SCALING, PIECE_HEIGHT * PIECE_SCALING};
 
   printf("Drawing piece type %d at (%d, %d) to screen at (%d, %d) with size "
          "(%d, %d)\n",
-         piece->type, row, col, destRect.x, destRect.y, destRect.w, destRect.h);
-  SDL_BlitScaled(spriteMap, &srcRect, screen, &destRect);
+         piece->type, row, col, dest_rect.x, dest_rect.y, dest_rect.w, dest_rect.h);
+  SDL_BlitScaled(sprite_map, &src_rect, screen, &dest_rect);
 }
 
-void drawAllPieces(SDL_Surface *screen, struct Board *board) {
+void draw_all_pieces(SDL_Surface *screen, board_t *board) {
   if (!screen || !board)
     return;
 
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
-      struct Piece *piece = get_piece_at(board, row, col);
+      struct piece_t *piece = get_piece_at(board, row, col);
       if (piece) {
-        drawPiece(screen, row, col, piece);
+        draw_piece(screen, row, col, piece);
       }
     }
   }
 }
 
-void drawPossibleMoves(SDL_Surface *screen,
-                       int possibleMoves[BOARD_SIZE][BOARD_SIZE]) {
-  if (!screen || !possibleMoves)
+void draw_possible_moves(SDL_Surface *screen,
+                       int possible_moves[BOARD_SIZE][BOARD_SIZE]) {
+  if (!screen || !possible_moves)
     return;
 
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
-      if (possibleMoves[row][col]) {
+      if (possible_moves[row][col]) {
         SDL_Rect square = get_square_rect(screen, row, col);
         // Draw a semi-transparent overlay for possible moves
         // For now, just draw a border

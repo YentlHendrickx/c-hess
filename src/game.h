@@ -21,33 +21,34 @@ extern const int WHITE;
 extern const int THEME_DEFAULT;
 extern const int THEME_WOOD;
 
-struct Piece {
+struct piece_t {
   int type; // 0 = empty, 1 = pawn, 2 = knight, etc.
   int color; // 0 = none, 1 = white, 2 = black
   int theme; // 0 = standard, 1 = wood
 };
 
-struct Square {
-  struct Piece piece;
+struct square_t {
+  struct piece_t piece;
   int column; // 0-7
   int row;    // 0-7
 };
 
-struct Board {
-  struct Square squares[8][8];
-};
+typedef struct {
+  struct square_t squares[8][8];
+} board_t;
 
-struct GameState {
-  struct Board board;
-  int currentTurn; // 1 = white, 2 = black
-  int selectedPieceRow;
-  int selectedPieceCol;
-  int possibleMoves[8][8]; // 1 = possible move, 0 = not possible
-};
+typedef struct {
+  board_t board;
+  int current_turn; // 1 = white, 2 = black
+  int move_count;
+  int selected_piece_row;
+  int selected_piece_col;
+  int possible_moves[8][8]; // 1 = possible move, 0 = not possible
+} game_state_t;
 
 // Game state functions
-int updateState(void);
-int init_game_state(void);
+int update_state(void);
+game_state_t* init_game_state(void);
 void cleanup_game_state(void);
 
 // Validation functions
@@ -57,8 +58,8 @@ int is_valid_color(int color);
 int is_valid_theme(int theme);
 
 // Board manipulation functions
-struct Piece* get_piece_at(struct Board* board, int row, int col);
-int set_piece_at(struct Board* board, int row, int col, struct Piece piece);
-int clear_piece_at(struct Board* board, int row, int col);
+struct piece_t* get_piece_at(board_t* board, int row, int col);
+int set_piece_at(board_t* board, int row, int col, struct piece_t piece);
+int clear_piece_at(board_t* board, int row, int col);
 
 #endif // GAME_H

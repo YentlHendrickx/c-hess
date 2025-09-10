@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void init_input_state(InputState *state) {
+void init_input_state(input_state_t *state) {
   if (!state)
     return;
 
@@ -14,7 +14,7 @@ void init_input_state(InputState *state) {
   memset(state->key_pressed, 0, sizeof(state->key_pressed));
 }
 
-void handle_quit_event(InputState *state) {
+void handle_quit_event(input_state_t *state) {
   if (!state)
     return;
 
@@ -22,7 +22,7 @@ void handle_quit_event(InputState *state) {
   printf("Quit event detected\n");
 }
 
-void handle_keydown_event(InputState *state, SDL_Keysym keysym) {
+void handle_keydown_event(input_state_t *state, SDL_Keysym keysym) {
   if (!state)
     return;
 
@@ -45,7 +45,7 @@ void handle_keydown_event(InputState *state, SDL_Keysym keysym) {
   }
 }
 
-void handle_mouse_event(InputState *state, SDL_Event *event) {
+void handle_mouse_event(input_state_t *state, SDL_Event *event) {
   if (!state || !event)
     return;
 
@@ -69,7 +69,7 @@ void handle_mouse_event(InputState *state, SDL_Event *event) {
   }
 }
 
-void handle_events(InputState *state) {
+void handle_events(input_state_t *state) {
   if (!state)
     return;
 

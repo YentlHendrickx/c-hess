@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-ResourceManager g_resources = {0};
+resource_manager_t g_resources = {0};
 
 ErrorCode init_resources(void) {
   // Initialize all sprite sheets
