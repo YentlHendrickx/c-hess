@@ -93,7 +93,7 @@ void draw_board(SDL_Surface *screen) {
   }
 }
 
-void draw_piece(SDL_Surface *screen, int row, int col, struct piece_t *piece) {
+void draw_piece(SDL_Surface *screen, int row, int col, piece_t *piece) {
   if (!screen || !piece || !is_valid_position(row, col)) {
     fprintf(stderr, "Invalid parameters to draw_piece\n");
     return;
@@ -133,7 +133,7 @@ void draw_all_pieces(SDL_Surface *screen, board_t *board) {
 
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
-      struct piece_t *piece = get_piece_at(board, row, col);
+      piece_t *piece = get_piece_at(board, row, col);
       if (piece) {
         draw_piece(screen, row, col, piece);
       }

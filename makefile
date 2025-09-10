@@ -3,7 +3,7 @@ CFLAGS := -Wall -Wextra -Werror -Wpedantic -std=c11 -g $(shell sdl2-config --cfl
 LDFLAGS := $(shell sdl2-config --libs) -lSDL2_image
 
 # Source files
-SRC_FILES := src/engine.c src/game.c src/main.c src/renderer.c src/input.c src/resources.c
+SRC_FILES := src/engine.c src/game.c src/piece.c src/main.c src/renderer.c src/input.c src/resources.c
 
 # Target
 TARGET := out/chess

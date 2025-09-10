@@ -22,14 +22,14 @@ extern const int WHITE;
 extern const int THEME_DEFAULT;
 extern const int THEME_WOOD;
 
-struct piece_t {
+typedef struct {
   int type; // 0 = empty, 1 = pawn, 2 = knight, etc.
   int color; // 0 = none, 1 = white, 2 = black
   int theme; // 0 = standard, 1 = wood
-};
+} piece_t;
 
 struct square_t {
-  struct piece_t piece;
+  piece_t piece;
   int column; // 0-7
   int row;    // 0-7
 };
@@ -62,8 +62,8 @@ int is_valid_color(int color);
 int is_valid_theme(int theme);
 
 // Board manipulation functions
-struct piece_t* get_piece_at(board_t* board, int row, int col);
-int set_piece_at(board_t* board, int row, int col, struct piece_t piece);
+piece_t* get_piece_at(board_t* board, int row, int col);
+int set_piece_at(board_t* board, int row, int col, piece_t piece);
 int clear_piece_at(board_t* board, int row, int col);
 
 #endif // GAME_H

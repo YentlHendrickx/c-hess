@@ -14,7 +14,7 @@ void cleanup_renderer(void);
 void clear_screen(SDL_Surface *screen);
 void draw_background(SDL_Surface *screen);
 void draw_board(SDL_Surface *screen);
-void draw_piece(SDL_Surface *screen, int row, int col, struct piece_t* piece);
+void draw_piece(SDL_Surface *screen, int row, int col, piece_t* piece);
 void draw_possible_moves(SDL_Surface *screen, int possible_moves[BOARD_SIZE][BOARD_SIZE]);
 void draw_all_pieces(SDL_Surface *screen, board_t* board);
 

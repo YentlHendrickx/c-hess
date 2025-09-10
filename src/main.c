@@ -116,9 +116,9 @@ int main(void) {
     // Frame rate limiting
     if (current_state->pause) {
       SDL_Delay(1000 / PAUSED_FPS);
-    } else {
-      SDL_Delay(1000 / TARGET_FPS);
+      continue;
     }
+    SDL_Delay(1000 / TARGET_FPS);
   }
 
   // Cleanup
