@@ -1,0 +1,38 @@
+name: Chess Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install SDL2 and dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-ttf-dev \
+          build-essential \
+          clang \
+          make
+
+    - name: Build project
+      run: make
+
+    - name: Test build
+      run: |
+        if [ -f out/chess ]; then
+          echo "Build successful - chess executable created"
+          ls -la out/
+        else
+          echo "Build failed - no executable found"
+          exit 1
+        fi
