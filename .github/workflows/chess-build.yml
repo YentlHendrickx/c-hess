@@ -31,7 +31,7 @@ jobs:
       run: |
         if [ -f ./chess ]; then
           echo "Build successful - chess executable created"
-          ls -la out/
+          ls -la ./
         else
           echo "Build failed - no executable found"
           exit 1
