@@ -22,6 +22,8 @@ extern const int THEME_WOOD;
 
 void get_allowed_moves(game_state_t *game_state, int start_row, int start_col);
 
+int is_square_under_attack(board_t *board, int row, int col, int attacking_color);
+
 int is_valid_position(int row, int col);
 int is_valid_piece_type(int type);
 int is_valid_color(int color);

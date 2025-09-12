@@ -46,9 +46,9 @@ Alternatively, you can compile and run using the following command:
     - [x] Basic movement rules for each piece (besides en passant and castling)
     - [x] Transfer turns between players
     - [x] En passant
-    - [ ] Detecting checkmate and stalemate ~20%
-    - [ ] Castling ~75%
+    - [x] Castling
     - [ ] Pawn promotion ~50%
+    - [ ] Detecting checkmate and stalemate ~20%
 - [ ] Implement AI opponent -> Minimax algorithm with alpha-beta pruning, maybe even neural networks down the line
 - [ ] Implement online multiplayer mode (if i get to it and don't get bored of this project)
 

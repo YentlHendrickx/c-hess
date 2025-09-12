@@ -32,6 +32,12 @@ typedef struct {
   int is_en_passant; // 1 = en passant capture, 0 = normal move
   int is_promotion; // 1 = pawn promotion, 0 = normal move
   int promotion_piece; // piece type for promotion (if is_promotion = 1)
+  // Castling-specific fields
+  int rook_from_row;
+  int rook_from_col;
+  int rook_to_row;
+  int rook_to_col;
+  piece_t rook_piece;
 } move_history_t;
 
 typedef struct {
@@ -45,6 +51,11 @@ typedef struct {
   int possible_moves[8][8]; // 1 = possible move, 0 = not possible
   move_history_t move_list[1024]; // Store up to 1024 moves; realistically this is more than enough
   input_state_t *input_state;
+  // Castling rights: 1 = can castle, 0 = cannot castle
+  int white_can_castle_kingside;
+  int white_can_castle_queenside;
+  int black_can_castle_kingside;
+  int black_can_castle_queenside;
 } game_state_t;
 
 // Game state functions

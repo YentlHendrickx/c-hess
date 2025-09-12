@@ -147,8 +147,67 @@ void queen_moves(piece_t piece, int start_row, int start_col, board_t *board,
   bishop_moves(piece, start_row, start_col, board, possible_moves);
 }
 
+// Helper function to check if a square is under attack
+int is_square_under_attack(board_t *board, int row, int col,
+                           int attacking_color) {
+  // Check all pieces of the attacking color
+  for (int r = 0; r < BOARD_SIZE; r++) {
+    for (int c = 0; c < BOARD_SIZE; c++) {
+      piece_t *piece = get_piece_at(board, r, c);
+      if (!(piece && piece->type != EMPTY && piece->color == attacking_color)) {
+        continue; // Not an attacking piece
+      }
+
+      // Check if this piece can attack the target square
+      int temp_moves[8][8] = {0};
+
+      if (piece->type == PAWN) {
+        // Pawns attack diagonally
+        int direction = (piece->color == WHITE) ? -1 : 1;
+        int attack_row = r + direction;
+        for (int col_offset = -1; col_offset <= 1; col_offset += 2) {
+          int attack_col = c + col_offset;
+          if (is_valid_position(attack_row, attack_col) && attack_row == row &&
+              attack_col == col) {
+            return 1;
+          }
+        }
+      } else if (piece->type == KNIGHT) {
+        knight_moves(*piece, r, c, board, temp_moves);
+        if (temp_moves[row][col])
+          return 1;
+      } else if (piece->type == BISHOP) {
+        bishop_moves(*piece, r, c, board, temp_moves);
+        if (temp_moves[row][col])
+          return 1;
+      } else if (piece->type == ROOK) {
+        rook_moves(*piece, r, c, board, temp_moves);
+        if (temp_moves[row][col])
+          return 1;
+      } else if (piece->type == QUEEN) {
+        queen_moves(*piece, r, c, board, temp_moves);
+        if (temp_moves[row][col])
+          return 1;
+      } else if (piece->type == KING) {
+        // King can attack adjacent squares
+        int move_offsets[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
+                                  {0, 1},   {1, -1}, {1, 0},  {1, 1}};
+        for (int i = 0; i < 8; i++) {
+          int new_row = r + move_offsets[i][0];
+          int new_col = c + move_offsets[i][1];
+          if (new_row == row && new_col == col) {
+            return 1;
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+
 void king_moves(piece_t piece, int start_row, int start_col, board_t *board,
-                int possible_moves[8][8]) {
+                int possible_moves[8][8], int can_castle_kingside,
+                int can_castle_queenside) {
   int move_offsets[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
                             {0, 1},   {1, -1}, {1, 0},  {1, 1}};
 
@@ -160,6 +219,48 @@ void king_moves(piece_t piece, int start_row, int start_col, board_t *board,
       piece_t *target_piece = get_piece_at(board, new_row, new_col);
       if (target_piece->type == EMPTY || target_piece->color != piece.color) {
         possible_moves[new_row][new_col] = 1;
+      }
+    }
+  }
+
+  // Castling. We can only castle if we have the right and have a clean line of
+  // sight
+  int starting_row = (piece.color == WHITE) ? 7 : 0;
+  int king_initial_col = 4;
+
+  // Figure out if we are castling kingside or queenside
+  if (start_row == starting_row && start_col == king_initial_col) {
+
+    // Check if king is currently in check
+    int opponent_color = (piece.color == WHITE) ? BLACK : WHITE;
+    if (is_square_under_attack(board, start_row, start_col, opponent_color)) {
+      return; // Can't castle while in check
+    }
+
+    // Kingside castling
+    if (can_castle_kingside) {
+      // Check squares between king and rook are empty
+      if (board->squares[starting_row][5].piece.type == EMPTY &&
+          board->squares[starting_row][6].piece.type == EMPTY) {
+        // Check if king would pass through check
+        if (!is_square_under_attack(board, starting_row, 5, opponent_color) &&
+            !is_square_under_attack(board, starting_row, 6, opponent_color)) {
+          possible_moves[starting_row][6] = 1; // Castling move
+        }
+      }
+    }
+
+    // Queenside castling
+    if (can_castle_queenside) {
+      // Check squares between king and rook are empty
+      if (board->squares[starting_row][1].piece.type == EMPTY &&
+          board->squares[starting_row][2].piece.type == EMPTY &&
+          board->squares[starting_row][3].piece.type == EMPTY) {
+        // Check if king would pass through check
+        if (!is_square_under_attack(board, starting_row, 2, opponent_color) &&
+            !is_square_under_attack(board, starting_row, 3, opponent_color)) {
+          possible_moves[starting_row][2] = 1; // Castling move
+        }
       }
     }
   }
@@ -184,7 +285,17 @@ void get_allowed_moves(game_state_t *game_state, int start_row, int start_col) {
   } else if (piece.type == QUEEN) {
     queen_moves(piece, start_row, start_col, board, temp);
   } else if (piece.type == KING) {
-    king_moves(piece, start_row, start_col, board, temp);
+    // Get castling rights for the current player
+    int can_castle_kingside, can_castle_queenside;
+    if (piece.color == WHITE) {
+      can_castle_kingside = game_state->white_can_castle_kingside;
+      can_castle_queenside = game_state->white_can_castle_queenside;
+    } else {
+      can_castle_kingside = game_state->black_can_castle_kingside;
+      can_castle_queenside = game_state->black_can_castle_queenside;
+    }
+    king_moves(piece, start_row, start_col, board, temp, can_castle_kingside,
+               can_castle_queenside);
   } else {
     // Invalid piece type
     fprintf(stderr, "Invalid piece type %d for allowed moves\n", piece.type);

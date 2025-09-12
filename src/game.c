@@ -138,6 +138,12 @@ game_state_t *init_game_state(void) {
   g_game_state.render_needed = 1; // Initial render needed
   g_game_state.input_state = malloc(sizeof(input_state_t));
 
+  // Initialize castling rights
+  g_game_state.white_can_castle_kingside = 1;
+  g_game_state.white_can_castle_queenside = 1;
+  g_game_state.black_can_castle_kingside = 1;
+  g_game_state.black_can_castle_queenside = 1;
+
   // Clear possible moves
   for (int row = 0; row < BOARD_SIZE; row++) {
     for (int col = 0; col < BOARD_SIZE; col++) {
@@ -229,12 +235,46 @@ int try_make_move(int row, int col) {
   g_game_state.move_list[g_game_state.move_count].is_promotion = 0;
   g_game_state.move_list[g_game_state.move_count].promotion_piece = EMPTY;
 
+  // Initialize castling fields
+  g_game_state.move_list[g_game_state.move_count].rook_from_row = -1;
+  g_game_state.move_list[g_game_state.move_count].rook_from_col = -1;
+  g_game_state.move_list[g_game_state.move_count].rook_to_row = -1;
+  g_game_state.move_list[g_game_state.move_count].rook_to_col = -1;
+  g_game_state.move_list[g_game_state.move_count].rook_piece.type = EMPTY;
+  g_game_state.move_list[g_game_state.move_count].rook_piece.color = NONE;
+  g_game_state.move_list[g_game_state.move_count].rook_piece.theme =
+      THEME_DEFAULT;
+
   // Detect special moves
   if (selected_piece->type == KING &&
       abs(row - g_game_state.selected_piece_row) == 0 &&
       abs(col - g_game_state.selected_piece_col) == 2) {
     // Castling move detected
     g_game_state.move_list[g_game_state.move_count].is_castling = 1;
+
+    // Store rook information in the same move entry for easier undo
+    int rook_from_col =
+        (col > g_game_state.selected_piece_col) ? 7 : 0; // h or a
+    int rook_to_col =
+        (col > g_game_state.selected_piece_col) ? col - 1 : col + 1; // f or d
+    int rook_row = g_game_state.selected_piece_row;
+    piece_t *rook_piece =
+        get_piece_at(&g_game_state.board, rook_row, rook_from_col);
+
+    if (rook_piece && rook_piece->type == ROOK &&
+        rook_piece->color == selected_piece->color) {
+      g_game_state.move_list[g_game_state.move_count].rook_from_row = rook_row;
+      g_game_state.move_list[g_game_state.move_count].rook_from_col =
+          rook_from_col;
+      g_game_state.move_list[g_game_state.move_count].rook_to_row = rook_row;
+      g_game_state.move_list[g_game_state.move_count].rook_to_col = rook_to_col;
+      g_game_state.move_list[g_game_state.move_count].rook_piece = *rook_piece;
+
+      // Move the rook
+      set_piece_at(&g_game_state.board, rook_row, rook_to_col, *rook_piece);
+      clear_piece_at(&g_game_state.board, rook_row, rook_from_col);
+    }
+
     printf("Castling move detected.\n");
   }
 
@@ -261,6 +301,35 @@ int try_make_move(int row, int col) {
     g_game_state.move_list[g_game_state.move_count].captured_piece =
         *get_piece_at(&g_game_state.board, captured_row, col);
     clear_piece_at(&g_game_state.board, captured_row, col);
+  }
+
+  // Update castling rights before moving pieces
+  if (selected_piece->type == KING) {
+    if (selected_piece->color == WHITE) {
+      g_game_state.white_can_castle_kingside = 0;
+      g_game_state.white_can_castle_queenside = 0;
+    } else {
+      g_game_state.black_can_castle_kingside = 0;
+      g_game_state.black_can_castle_queenside = 0;
+    }
+  } else if (selected_piece->type == ROOK) {
+    if (selected_piece->color == WHITE) {
+      if (g_game_state.selected_piece_row == 7 &&
+          g_game_state.selected_piece_col == 0) {
+        g_game_state.white_can_castle_queenside = 0;
+      } else if (g_game_state.selected_piece_row == 7 &&
+                 g_game_state.selected_piece_col == 7) {
+        g_game_state.white_can_castle_kingside = 0;
+      }
+    } else {
+      if (g_game_state.selected_piece_row == 0 &&
+          g_game_state.selected_piece_col == 0) {
+        g_game_state.black_can_castle_queenside = 0;
+      } else if (g_game_state.selected_piece_row == 0 &&
+                 g_game_state.selected_piece_col == 7) {
+        g_game_state.black_can_castle_kingside = 0;
+      }
+    }
   }
 
   // Move piece
@@ -416,23 +485,17 @@ int undo_last_move(void) {
 
   // Handle special moves
   if (last_move->is_castling) {
-    // Undo castling - move king back and restore rook
+    // Undo castling - move king back
     set_piece_at(&g_game_state.board, last_move->from_row, last_move->from_col,
                  last_move->moved_piece);
+    clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
 
-    // Restore rook position
-    if (last_move->to_col > last_move->from_col) {
-      // Kingside castling - restore rook from f to h
-      piece_t rook = {ROOK, last_move->moved_piece.color,
-                      last_move->moved_piece.theme};
-      set_piece_at(&g_game_state.board, last_move->from_row, 7, rook);
-      clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
-    } else {
-      // Queenside castling - restore rook from d to a
-      piece_t rook = {ROOK, last_move->moved_piece.color,
-                      last_move->moved_piece.theme};
-      set_piece_at(&g_game_state.board, last_move->from_row, 0, rook);
-      clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+    // Restore rook position using stored information
+    if (last_move->rook_from_row != -1 && last_move->rook_from_col != -1) {
+      set_piece_at(&g_game_state.board, last_move->rook_from_row,
+                   last_move->rook_from_col, last_move->rook_piece);
+      clear_piece_at(&g_game_state.board, last_move->rook_to_row,
+                     last_move->rook_to_col);
     }
   } else if (last_move->is_en_passant) {
     // Undo en passant - restore pawn and captured pawn
@@ -458,6 +521,31 @@ int undo_last_move(void) {
     } else {
       // Clear the destination square if no piece was captured
       clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+    }
+  }
+
+  // Restore castling rights if needed
+  if (last_move->moved_piece.type == KING) {
+    if (last_move->moved_piece.color == WHITE) {
+      g_game_state.white_can_castle_kingside = 1;
+      g_game_state.white_can_castle_queenside = 1;
+    } else {
+      g_game_state.black_can_castle_kingside = 1;
+      g_game_state.black_can_castle_queenside = 1;
+    }
+  } else if (last_move->moved_piece.type == ROOK) {
+    if (last_move->moved_piece.color == WHITE) {
+      if (last_move->from_row == 7 && last_move->from_col == 0) {
+        g_game_state.white_can_castle_queenside = 1;
+      } else if (last_move->from_row == 7 && last_move->from_col == 7) {
+        g_game_state.white_can_castle_kingside = 1;
+      }
+    } else {
+      if (last_move->from_row == 0 && last_move->from_col == 0) {
+        g_game_state.black_can_castle_queenside = 1;
+      } else if (last_move->from_row == 0 && last_move->from_col == 7) {
+        g_game_state.black_can_castle_kingside = 1;
+      }
     }
   }
 
