@@ -1,4 +1,4 @@
-*.out
 assets/pieces/*.png
 !assets/pieces/*-sheet.png
 assets/copyrighted/*
+chess

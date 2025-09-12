@@ -7,6 +7,10 @@
 // Input state structure
 typedef struct {
     int exit_trigger;
+    int print_history;
+    int undo_move;
+    int show_last_moves;
+    int show_help;
     int pause;
     int mouse_x;
     int mouse_y;

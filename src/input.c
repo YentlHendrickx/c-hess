@@ -7,6 +7,10 @@ void init_input_state(input_state_t *state) {
     return;
 
   state->exit_trigger = 0;
+  state->print_history = 0;
+  state->undo_move = 0;
+  state->show_last_moves = 0;
+  state->show_help = 0;
   state->pause = 0;
   state->mouse_x = 0;
   state->mouse_y = 0;
@@ -39,6 +43,18 @@ void handle_keydown_event(input_state_t *state, SDL_Keysym keysym) {
   case SDLK_SPACE:
     state->pause = !state->pause;
     printf("Space key pressed, toggling pause to %d\n", state->pause);
+    break;
+  case SDLK_h:
+    state->print_history = 1;
+    break;
+  case SDLK_u:
+    state->undo_move = 1;
+    break;
+  case SDLK_l:
+    state->show_last_moves = 1;
+    break;
+  case SDLK_SLASH:
+    state->show_help = 1;
     break;
   default:
     break;

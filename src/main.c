@@ -8,36 +8,38 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_surface.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-void render_game(SDL_Surface *screen, game_state_t *state) {
+void render_game(SDL_Renderer *renderer, game_state_t *state) {
   // Clear
-  clear_screen(screen);
+  clear_screen(renderer);
 
   // Draw
-  draw_background(screen);
-  draw_board(screen);
-  draw_all_pieces(screen, &state->board);
-  draw_possible_moves(screen, state->possible_moves);
+  draw_background(renderer);
+  draw_board(renderer);
+  draw_all_pieces(renderer, &state->board);
+  draw_possible_moves(renderer, state->possible_moves, &state->board);
+
+  // Present the rendered frame
+  SDL_RenderPresent(renderer);
 }
 
-void game_loop(input_state_t *current_state, SDL_Surface *screen,
+void game_loop(input_state_t *current_state, SDL_Renderer *renderer,
                game_state_t *state) {
   // 1. Handle input
   handle_events(current_state);
 
   // 2. Update game state
-  update_state(screen);
+  update_state(renderer);
 
   // 3. Render if called for
   if (!state->render_needed) {
     return;
   }
 
-  render_game(screen, state);
+  render_game(renderer, state);
   state->render_needed = 0; // Reset render flag for next frame
 }
 
@@ -57,11 +59,11 @@ int calculate_fps(Uint32 *last_frame_time, int *frame_count) {
 
 int main(void) {
   SDL_Window *win = NULL;
-  SDL_Surface *screen = NULL;
+  SDL_Renderer *renderer = NULL;
   ErrorCode result;
 
   // Initialize all systems
-  result = init_engine(&win, &screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+  result = init_engine(&win, &renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
   if (result != ERROR_NONE) {
     fprintf(stderr, "Failed to initialize engine: %d\n", result);
     return 1;
@@ -70,15 +72,15 @@ int main(void) {
   result = init_renderer();
   if (result != ERROR_NONE) {
     fprintf(stderr, "Failed to initialize renderer: %d\n", result);
-    cleanup_engine(win);
+    cleanup_engine(win, renderer);
     return 1;
   }
 
-  result = init_resources();
+  result = init_resources(renderer);
   if (result != ERROR_NONE) {
     fprintf(stderr, "Failed to initialize resources: %d\n", result);
     cleanup_renderer();
-    cleanup_engine(win);
+    cleanup_engine(win, renderer);
     return 1;
   }
 
@@ -91,7 +93,7 @@ int main(void) {
     cleanup_game_state();
     cleanup_resources();
     cleanup_renderer();
-    cleanup_engine(win);
+    cleanup_engine(win, renderer);
     return 1;
   }
   init_input_state(current_state);
@@ -110,8 +112,7 @@ int main(void) {
       SDL_SetWindowTitle(win, title);
     }
 
-    game_loop(current_state, screen, state);
-    SDL_UpdateWindowSurface(win);
+    game_loop(current_state, renderer, state);
 
     // Frame rate limiting
     if (current_state->pause) {
@@ -126,7 +127,7 @@ int main(void) {
   cleanup_game_state();
   cleanup_resources();
   cleanup_renderer();
-  cleanup_engine(win);
+  cleanup_engine(win, renderer);
 
   return 0;
 }

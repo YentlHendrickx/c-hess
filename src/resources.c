@@ -4,34 +4,84 @@
 
 resource_manager_t g_resources = {0};
 
-ErrorCode init_resources(void) {
-  // Initialize all sprite sheets
-  g_resources.white_default_sheet = IMG_Load("assets/pieces/white-sheet.png");
-  if (!g_resources.white_default_sheet) {
+ErrorCode init_resources(SDL_Renderer *renderer) {
+  if (!renderer) {
+    fprintf(stderr, "Renderer is NULL\n");
+    return ERROR_INVALID_INPUT;
+  }
+
+  // Load surfaces first, then convert to textures
+  SDL_Surface *temp_surface;
+
+  // Load white default sprite sheet
+  temp_surface = IMG_Load("assets/pieces/white-sheet.png");
+  if (!temp_surface) {
     fprintf(stderr, "Failed to load white default sprite sheet: %s\n",
             SDL_GetError());
     return ERROR_FILE_LOAD;
   }
-
-  g_resources.black_default_sheet = IMG_Load("assets/pieces/black-sheet.png");
-  if (!g_resources.black_default_sheet) {
-    fprintf(stderr, "Failed to load black default sprite sheet: %s\n",
+  g_resources.white_default_sheet =
+      SDL_CreateTextureFromSurface(renderer, temp_surface);
+  SDL_FreeSurface(temp_surface);
+  if (!g_resources.white_default_sheet) {
+    fprintf(stderr,
+            "Failed to create texture from white default sprite sheet: %s\n",
             SDL_GetError());
-    SDL_FreeSurface(g_resources.white_default_sheet);
     return ERROR_FILE_LOAD;
   }
 
-  g_resources.white_wood_sheet = IMG_Load("assets/pieces/white-wood-sheet.png");
-  if (!g_resources.white_wood_sheet) {
-    fprintf(stderr, "Failed to load white wood sprite sheet: %s\n",
+  // Load black default sprite sheet
+  temp_surface = IMG_Load("assets/pieces/black-sheet.png");
+  if (!temp_surface) {
+    fprintf(stderr, "Failed to load black default sprite sheet: %s\n",
+            SDL_GetError());
+    cleanup_resources();
+    return ERROR_FILE_LOAD;
+  }
+  g_resources.black_default_sheet =
+      SDL_CreateTextureFromSurface(renderer, temp_surface);
+  SDL_FreeSurface(temp_surface);
+  if (!g_resources.black_default_sheet) {
+    fprintf(stderr,
+            "Failed to create texture from black default sprite sheet: %s\n",
             SDL_GetError());
     cleanup_resources();
     return ERROR_FILE_LOAD;
   }
 
-  g_resources.black_wood_sheet = IMG_Load("assets/pieces/black-wood-sheet.png");
-  if (!g_resources.black_wood_sheet) {
+  // Load white wood sprite sheet
+  temp_surface = IMG_Load("assets/pieces/white-wood-sheet.png");
+  if (!temp_surface) {
+    fprintf(stderr, "Failed to load white wood sprite sheet: %s\n",
+            SDL_GetError());
+    cleanup_resources();
+    return ERROR_FILE_LOAD;
+  }
+  g_resources.white_wood_sheet =
+      SDL_CreateTextureFromSurface(renderer, temp_surface);
+  SDL_FreeSurface(temp_surface);
+  if (!g_resources.white_wood_sheet) {
+    fprintf(stderr,
+            "Failed to create texture from white wood sprite sheet: %s\n",
+            SDL_GetError());
+    cleanup_resources();
+    return ERROR_FILE_LOAD;
+  }
+
+  // Load black wood sprite sheet
+  temp_surface = IMG_Load("assets/pieces/black-wood-sheet.png");
+  if (!temp_surface) {
     fprintf(stderr, "Failed to load black wood sprite sheet: %s\n",
+            SDL_GetError());
+    cleanup_resources();
+    return ERROR_FILE_LOAD;
+  }
+  g_resources.black_wood_sheet =
+      SDL_CreateTextureFromSurface(renderer, temp_surface);
+  SDL_FreeSurface(temp_surface);
+  if (!g_resources.black_wood_sheet) {
+    fprintf(stderr,
+            "Failed to create texture from black wood sprite sheet: %s\n",
             SDL_GetError());
     cleanup_resources();
     return ERROR_FILE_LOAD;
@@ -43,25 +93,25 @@ ErrorCode init_resources(void) {
 
 void cleanup_resources(void) {
   if (g_resources.white_default_sheet) {
-    SDL_FreeSurface(g_resources.white_default_sheet);
+    SDL_DestroyTexture(g_resources.white_default_sheet);
     g_resources.white_default_sheet = NULL;
   }
   if (g_resources.black_default_sheet) {
-    SDL_FreeSurface(g_resources.black_default_sheet);
+    SDL_DestroyTexture(g_resources.black_default_sheet);
     g_resources.black_default_sheet = NULL;
   }
   if (g_resources.white_wood_sheet) {
-    SDL_FreeSurface(g_resources.white_wood_sheet);
+    SDL_DestroyTexture(g_resources.white_wood_sheet);
     g_resources.white_wood_sheet = NULL;
   }
   if (g_resources.black_wood_sheet) {
-    SDL_FreeSurface(g_resources.black_wood_sheet);
+    SDL_DestroyTexture(g_resources.black_wood_sheet);
     g_resources.black_wood_sheet = NULL;
   }
   g_resources.initialized = 0;
 }
 
-SDL_Surface *get_piece_sprite(int piece_type, int color, int theme) {
+SDL_Texture *get_piece_sprite(int piece_type, int color, int theme) {
   if (!g_resources.initialized) {
     return NULL;
   }
@@ -78,7 +128,7 @@ SDL_Surface *get_piece_sprite(int piece_type, int color, int theme) {
   }
 
   // Select appropriate sprite sheet
-  SDL_Surface *sheet = NULL;
+  SDL_Texture *sheet = NULL;
   if (color == WHITE) {
     sheet = (theme == THEME_WOOD) ? g_resources.white_wood_sheet
                                   : g_resources.white_default_sheet;

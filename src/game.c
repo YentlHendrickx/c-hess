@@ -5,24 +5,88 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const int EMPTY = 0;
-const int NONE = 0;
-
-const int PAWN = 1;
-const int KNIGHT = 2;
-const int ROOK = 3;
-const int BISHOP = 4;
-const int QUEEN = 5;
-const int KING = 6;
-
-const int WHITE = 1;
-const int BLACK = 2;
-
-const int THEME_DEFAULT = 0;
-const int THEME_WOOD = 1;
-
-// Global game state
 static game_state_t g_game_state = {0};
+
+char col_to_file(int col) { return 'a' + col; }
+int row_to_rank(int row) { return 8 - row; }
+
+char get_piece_symbol(int piece_type) {
+  if (piece_type == PAWN)
+    return '\0'; // Pawns have no symbol in notation
+  if (piece_type == KING)
+    return 'K'; // King symbol
+  if (piece_type == QUEEN)
+    return 'Q'; // Queen symbol
+  if (piece_type == ROOK)
+    return 'R'; // Rook symbol
+  if (piece_type == BISHOP)
+    return 'B'; // Bishop symbol
+  if (piece_type == KNIGHT)
+    return 'N'; // Knight symbol
+  return '\0';  // Unknown piece
+}
+
+// Convert move to chess notation
+void move_to_notation(move_history_t *move, char *notation, int max_len) {
+  if (!move || !notation)
+    return;
+
+  char piece_symbol = get_piece_symbol(move->moved_piece.type);
+  char from_file = col_to_file(move->from_col);
+  char to_file = col_to_file(move->to_col);
+  int to_rank = row_to_rank(move->to_row);
+
+  // Handle special moves first
+  if (move->is_castling) {
+    if (move->to_col > move->from_col) {
+      snprintf(notation, max_len, "O-O"); // Kingside castling
+    } else {
+      snprintf(notation, max_len, "O-O-O"); // Queenside castling
+    }
+    return;
+  }
+
+  if (move->is_promotion) {
+    char promotion_symbol = get_piece_symbol(move->promotion_piece);
+    if (move->captured_piece.type != EMPTY) {
+      // Pawn capture with promotion (e.g., exd8=Q)
+      snprintf(notation, max_len, "%cx%d=%c", from_file, to_rank,
+               promotion_symbol);
+    } else {
+      // Pawn move with promotion (e.g., e8=Q)
+      snprintf(notation, max_len, "%c%d=%c", to_file, to_rank,
+               promotion_symbol);
+    }
+    return;
+  }
+
+  if (move->is_en_passant) {
+    // En passant capture (e.g., exd6 e.p.)
+    snprintf(notation, max_len, "%cx%d e.p.", from_file, to_rank);
+    return;
+  }
+
+  // Regular moves
+  if (move->captured_piece.type != EMPTY) {
+    // Capture move
+    if (move->moved_piece.type == PAWN) {
+      // Pawn capture (e.g., exd5)
+      snprintf(notation, max_len, "%cx%d", from_file, to_rank);
+    } else {
+      // Piece capture (e.g., Nxf7)
+      snprintf(notation, max_len, "%c%c%d", piece_symbol, to_file, to_rank);
+    }
+  } else {
+    // Normal move
+    if (move->moved_piece.type == PAWN) {
+      // Pawn move (e.g., e4)
+      snprintf(notation, max_len, "%c%d", to_file, to_rank);
+    } else {
+      // Piece move (e.g., Nf3)
+      snprintf(notation, max_len, "%c%c%d", piece_symbol, to_file, to_rank);
+    }
+  }
+}
 
 void init_standard_board(void) {
   int initial_positions[8][8] = {
@@ -91,9 +155,9 @@ void cleanup_game_state(void) {
   // Nothing to cleanup for now, but placeholder for future cleanup
 }
 
-void find_square_by_coordinates(SDL_Surface *screen, int x, int y, int *row,
+void find_square_by_coordinates(SDL_Renderer *renderer, int x, int y, int *row,
                                 int *col) {
-  int cell_size = get_cell_size(screen);
+  int cell_size = get_cell_size(renderer);
   int temp_col = x / cell_size;
   int temp_row = y / cell_size;
 
@@ -113,8 +177,6 @@ void find_piece_by_square(int row, int col) {
     if (piece && piece->type != EMPTY) {
       g_game_state.selected_piece_row = row;
       g_game_state.selected_piece_col = col;
-      printf("Selected piece at (%d, %d): type %d, color %d\n", row, col,
-             piece->type, piece->color);
       return;
     }
 
@@ -135,61 +197,128 @@ void clear_possible_moves(void) {
   }
 }
 
-void handle_mouse_click(SDL_Surface *screen, int x, int y) {
+int try_make_move(int row, int col) {
+  piece_t *selected_piece =
+      get_piece_at(&g_game_state.board, g_game_state.selected_piece_row,
+                   g_game_state.selected_piece_col);
+  if (!selected_piece) {
+    return 0; // No piece selected
+  }
+
+  // Get the piece that will be captured (if any)
+  piece_t *captured_piece = get_piece_at(&g_game_state.board, row, col);
+  piece_t captured_piece_copy = {0};
+  if (captured_piece && captured_piece->type != EMPTY) {
+    captured_piece_copy = *captured_piece;
+  }
+
+  // Record move in history BEFORE making the move
+  g_game_state.move_list[g_game_state.move_count].from_row =
+      g_game_state.selected_piece_row;
+  g_game_state.move_list[g_game_state.move_count].from_col =
+      g_game_state.selected_piece_col;
+  g_game_state.move_list[g_game_state.move_count].to_row = row;
+  g_game_state.move_list[g_game_state.move_count].to_col = col;
+  g_game_state.move_list[g_game_state.move_count].moved_piece = *selected_piece;
+  g_game_state.move_list[g_game_state.move_count].captured_piece =
+      captured_piece_copy;
+
+  // Initialize special move flags
+  g_game_state.move_list[g_game_state.move_count].is_castling = 0;
+  g_game_state.move_list[g_game_state.move_count].is_en_passant = 0;
+  g_game_state.move_list[g_game_state.move_count].is_promotion = 0;
+  g_game_state.move_list[g_game_state.move_count].promotion_piece = EMPTY;
+
+  // Detect special moves
+  if (selected_piece->type == KING &&
+      abs(row - g_game_state.selected_piece_row) == 0 &&
+      abs(col - g_game_state.selected_piece_col) == 2) {
+    // Castling move detected
+    g_game_state.move_list[g_game_state.move_count].is_castling = 1;
+    printf("Castling move detected.\n");
+  }
+
+  if (selected_piece->type == PAWN &&
+      ((selected_piece->color == WHITE && row == 0) ||
+       (selected_piece->color == BLACK && row == 7))) {
+    // Pawn promotion detected
+    g_game_state.move_list[g_game_state.move_count].is_promotion = 1;
+    g_game_state.move_list[g_game_state.move_count].promotion_piece =
+        QUEEN; // Default to queen
+    printf("Pawn promotion to Queen.\n");
+  }
+
+  if (selected_piece->type == PAWN && captured_piece_copy.type == EMPTY &&
+      col != g_game_state.selected_piece_col) {
+    // En passant capture detected
+    g_game_state.move_list[g_game_state.move_count].is_en_passant = 1;
+    printf("En passant capture detected.\n");
+
+    // Clear the captured pawn
+    int captured_row = (selected_piece->color == WHITE) ? row + 1 : row - 1;
+    captured_piece_copy = *captured_piece;
+
+    g_game_state.move_list[g_game_state.move_count].captured_piece =
+        *get_piece_at(&g_game_state.board, captured_row, col);
+    clear_piece_at(&g_game_state.board, captured_row, col);
+  }
+
+  // Move piece
+  set_piece_at(&g_game_state.board, row, col, *selected_piece);
+  clear_piece_at(&g_game_state.board, g_game_state.selected_piece_row,
+                 g_game_state.selected_piece_col);
+
+  // Switch turn
+  g_game_state.current_turn =
+      (g_game_state.current_turn == WHITE) ? BLACK : WHITE;
+  g_game_state.move_count++;
+  printf("It's now %s's turn.\n",
+         (g_game_state.current_turn == WHITE) ? "White" : "Black");
+
+  // Clear selection and possible moves
+  g_game_state.selected_piece_row = -1;
+  g_game_state.selected_piece_col = -1;
+  clear_possible_moves();
+  return 1;
+}
+
+void handle_mouse_click(SDL_Renderer *renderer, int x, int y) {
   g_game_state.input_state->mouse_clicked = 0; // Reset click state
-  printf("Mouse clicked at (%d, %d)\n", g_game_state.input_state->mouse_x,
-         g_game_state.input_state->mouse_y);
 
   int row, col;
-  find_square_by_coordinates(screen, x, y, &row, &col);
+  find_square_by_coordinates(renderer, x, y, &row, &col);
 
   if (row == -1 || col == -1) {
     clear_possible_moves();
     return;
   }
 
-  // We clicked on an empty square or invalid square, if this is already in the
-  // possible moves list; and is really a possible move, move the piece
+  // We clicked on an empty square or invalid square, if this is already in
+  // the possible moves list; and is really a possible move, move the piece
   if (g_game_state.possible_moves[row][col] == 1 &&
       g_game_state.selected_piece_row != -1 &&
       g_game_state.selected_piece_col != -1) {
-    piece_t *selected_piece =
-        get_piece_at(&g_game_state.board, g_game_state.selected_piece_row,
-                     g_game_state.selected_piece_col);
-
-    if (selected_piece) {
-      // Move piece
-      set_piece_at(&g_game_state.board, row, col, *selected_piece);
-      clear_piece_at(&g_game_state.board, g_game_state.selected_piece_row,
-                     g_game_state.selected_piece_col);
-
-      // Switch turn
-      g_game_state.current_turn =
-          (g_game_state.current_turn == WHITE) ? BLACK : WHITE;
-      g_game_state.move_count++;
-      printf("It's now %s's turn.\n",
-             (g_game_state.current_turn == WHITE) ? "White" : "Black");
-
-      // Clear selection and possible moves
-      g_game_state.selected_piece_row = -1;
-      g_game_state.selected_piece_col = -1;
-      clear_possible_moves();
-    }
-
-    return;
+    if (try_make_move(row, col))
+      return;
   }
 
   find_piece_by_square(row, col);
   if (g_game_state.selected_piece_row != -1 &&
       g_game_state.selected_piece_col != -1) {
-    printf("Calculating possible moves for selected piece\n");
+
+    if (g_game_state.board.squares[row][col].piece.color !=
+        g_game_state.current_turn) {
+      // Selected piece is not of the current player's color; ignore
+      g_game_state.selected_piece_row = -1;
+      g_game_state.selected_piece_col = -1;
+      clear_possible_moves();
+      return;
+    }
 
     int sel_row = g_game_state.selected_piece_row;
     int sel_col = g_game_state.selected_piece_col;
 
-    get_allowed_moves(g_game_state.board.squares[sel_row][sel_col].piece,
-                      sel_row, sel_col, &g_game_state.board,
-                      g_game_state.possible_moves);
+    get_allowed_moves(&g_game_state, sel_row, sel_col);
     return;
   }
 
@@ -199,64 +328,185 @@ void handle_mouse_click(SDL_Surface *screen, int x, int y) {
   clear_possible_moves();
 }
 
-void update_state(SDL_Surface *screen) {
+void print_history(void) {
+  if (g_game_state.move_count <= 0) {
+    printf("No moves made yet.\n");
+    return;
+  }
+
+  printf("\n=== Move History ===\n");
+  for (int i = 0; i < g_game_state.move_count; i++) {
+    move_history_t *move = &g_game_state.move_list[i];
+    char notation[16];
+    move_to_notation(move, notation, sizeof(notation));
+
+    // Print move number and notation
+    if (i % 2 == 0) {
+      // White's move
+      printf("%d. %s", (i / 2) + 1, notation);
+    } else {
+      // Black's move
+      printf(" %s\n", notation);
+    }
+  }
+
+  // If odd number of moves, add newline
+  if (g_game_state.move_count % 2 == 1) {
+    printf("\n");
+  }
+  printf("===================\n\n");
+}
+
+void print_last_moves(int count) {
+  if (g_game_state.move_count <= 0) {
+    printf("No moves made yet.\n");
+    return;
+  }
+
+  int start = (g_game_state.move_count - count > 0)
+                  ? g_game_state.move_count - count
+                  : 0;
+
+  printf("\n=== Last %d Moves ===\n", g_game_state.move_count - start);
+  for (int i = start; i < g_game_state.move_count; i++) {
+    move_history_t *move = &g_game_state.move_list[i];
+    char notation[16];
+    move_to_notation(move, notation, sizeof(notation));
+
+    // Print move number and notation
+    if (i % 2 == 0) {
+      // White's move
+      printf("%d. %s", (i / 2) + 1, notation);
+    } else {
+      // Black's move
+      printf(" %s\n", notation);
+    }
+  }
+
+  // If odd number of moves, add newline
+  if ((g_game_state.move_count - start) % 2 == 1) {
+    printf("\n");
+  }
+  printf("===================\n\n");
+}
+
+void print_help(void) {
+  printf("\n=== Chess Game Controls ===\n");
+  printf("Mouse:\n");
+  printf("  Left Click - Select piece or make move\n");
+  printf("\nKeyboard:\n");
+  printf("  ESC - Exit game\n");
+  printf("  SPACE - Pause/Resume game\n");
+  printf("  H - Show full move history\n");
+  printf("  L - Show last 10 moves\n");
+  printf("  U - Undo last move\n");
+  printf("  ? - Show this help\n");
+  printf("===========================\n\n");
+}
+
+int undo_last_move(void) {
+  if (g_game_state.move_count <= 0) {
+    printf("No moves to undo.\n");
+    return 0;
+  }
+
+  // Get the last move
+  move_history_t *last_move =
+      &g_game_state.move_list[g_game_state.move_count - 1];
+
+  // Handle special moves
+  if (last_move->is_castling) {
+    // Undo castling - move king back and restore rook
+    set_piece_at(&g_game_state.board, last_move->from_row, last_move->from_col,
+                 last_move->moved_piece);
+
+    // Restore rook position
+    if (last_move->to_col > last_move->from_col) {
+      // Kingside castling - restore rook from f to h
+      piece_t rook = {ROOK, last_move->moved_piece.color,
+                      last_move->moved_piece.theme};
+      set_piece_at(&g_game_state.board, last_move->from_row, 7, rook);
+      clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+    } else {
+      // Queenside castling - restore rook from d to a
+      piece_t rook = {ROOK, last_move->moved_piece.color,
+                      last_move->moved_piece.theme};
+      set_piece_at(&g_game_state.board, last_move->from_row, 0, rook);
+      clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+    }
+  } else if (last_move->is_en_passant) {
+    // Undo en passant - restore pawn and captured pawn
+    set_piece_at(&g_game_state.board, last_move->from_row, last_move->from_col,
+                 last_move->moved_piece);
+
+    // Restore captured pawn in the correct position
+    int captured_row = (last_move->moved_piece.color == WHITE)
+                           ? last_move->to_row + 1
+                           : last_move->to_row - 1;
+    set_piece_at(&g_game_state.board, captured_row, last_move->to_col,
+                 last_move->captured_piece);
+    clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+  } else {
+    // Regular move undo
+    set_piece_at(&g_game_state.board, last_move->from_row, last_move->from_col,
+                 last_move->moved_piece);
+
+    // Restore captured piece if there was one
+    if (last_move->captured_piece.type != EMPTY) {
+      set_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col,
+                   last_move->captured_piece);
+    } else {
+      // Clear the destination square if no piece was captured
+      clear_piece_at(&g_game_state.board, last_move->to_row, last_move->to_col);
+    }
+  }
+
+  // Switch turn back
+  g_game_state.current_turn =
+      (g_game_state.current_turn == WHITE) ? BLACK : WHITE;
+  g_game_state.move_count--;
+
+  // Clear selection and possible moves
+  g_game_state.selected_piece_row = -1;
+  g_game_state.selected_piece_col = -1;
+  clear_possible_moves();
+
+  printf("Undid last move. It's now %s's turn.\n",
+         (g_game_state.current_turn == WHITE) ? "White" : "Black");
+  return 1;
+}
+
+void update_state(SDL_Renderer *renderer) {
   if (g_game_state.move_count == -1) {
     printf("Game started. White's turn.\n");
     g_game_state.move_count++;
   }
 
   if (g_game_state.input_state->mouse_clicked) {
-    handle_mouse_click(screen, g_game_state.input_state->mouse_x,
+    handle_mouse_click(renderer, g_game_state.input_state->mouse_x,
                        g_game_state.input_state->mouse_y);
     g_game_state.render_needed = 1; // Mark for re-render
   }
-}
 
-// Validation functions
-int is_valid_position(int row, int col) {
-  return (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE);
-}
-
-int is_valid_piece_type(int type) { return (type >= EMPTY && type <= KING); }
-
-int is_valid_color(int color) {
-  return (color == NONE || color == WHITE || color == BLACK);
-}
-
-int is_valid_theme(int theme) {
-  return (theme == THEME_DEFAULT || theme == THEME_WOOD);
-}
-
-// Board manipulation functions
-piece_t *get_piece_at(board_t *board, int row, int col) {
-  if (!board || !is_valid_position(row, col)) {
-    return NULL;
-  }
-  return &board->squares[row][col].piece;
-}
-
-int set_piece_at(board_t *board, int row, int col, piece_t piece) {
-  if (!board || !is_valid_position(row, col)) {
-    return ERROR_INVALID_INPUT;
+  if (g_game_state.input_state->print_history) {
+    g_game_state.input_state->print_history = 0;
+    print_history();
   }
 
-  if (!is_valid_piece_type(piece.type) || !is_valid_color(piece.color) ||
-      !is_valid_theme(piece.theme)) {
-    return ERROR_INVALID_INPUT;
+  if (g_game_state.input_state->undo_move) {
+    g_game_state.input_state->undo_move = 0;
+    if (undo_last_move()) {
+      g_game_state.render_needed = 1; // Mark for re-render
+    }
   }
 
-  board->squares[row][col].piece = piece;
-  return ERROR_NONE;
-}
-
-int clear_piece_at(board_t *board, int row, int col) {
-  if (!board || !is_valid_position(row, col)) {
-    return ERROR_INVALID_INPUT;
+  if (g_game_state.input_state->show_last_moves) {
+    g_game_state.input_state->show_last_moves = 0;
+    print_last_moves(10); // Show last 10 moves
   }
 
-  board->squares[row][col].piece.type = EMPTY;
-  board->squares[row][col].piece.color = NONE;
-  board->squares[row][col].piece.theme = THEME_DEFAULT;
-
-  return ERROR_NONE;
+  if (g_game_state.input_state->show_help) {
+    g_game_state.input_state->show_help = 0;
+    print_help();
+  }
 }

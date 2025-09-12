@@ -3,7 +3,7 @@
 #include <SDL2/SDL_video.h>
 #include <stdio.h>
 
-ErrorCode init_engine(SDL_Window **win, SDL_Surface **screen, int width,
+ErrorCode init_engine(SDL_Window **win, SDL_Renderer **renderer, int width,
                       int height) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
@@ -20,18 +20,25 @@ ErrorCode init_engine(SDL_Window **win, SDL_Surface **screen, int width,
     return ERROR_WINDOW_CREATE;
   }
 
-  *screen = SDL_GetWindowSurface(*win);
-  if (*screen == NULL) {
-    fprintf(stderr, "SDL_GetWindowSurface Error: %s\n", SDL_GetError());
+  *renderer = SDL_CreateRenderer(
+      *win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  if (*renderer == NULL) {
+    fprintf(stderr, "SDL_CreateRenderer Error: %s\n", SDL_GetError());
     SDL_DestroyWindow(*win);
     SDL_Quit();
     return ERROR_SURFACE_CREATE;
   }
 
+  // Set renderer properties
+  SDL_SetRenderDrawBlendMode(*renderer, SDL_BLENDMODE_BLEND);
+
   return ERROR_NONE;
 }
 
-void cleanup_engine(SDL_Window *win) {
+void cleanup_engine(SDL_Window *win, SDL_Renderer *renderer) {
+  if (renderer != NULL) {
+    SDL_DestroyRenderer(renderer);
+  }
   if (win != NULL) {
     SDL_DestroyWindow(win);
   }

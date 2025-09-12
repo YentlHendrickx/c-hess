@@ -5,38 +5,34 @@
 #include "config.h"
 #include "input.h"
 
-// Piece types and colors
-extern const int EMPTY;
-extern const int NONE;
-
-extern const int PAWN;
-extern const int KNIGHT;
-extern const int BISHOP;
-extern const int ROOK;
-extern const int QUEEN;
-extern const int KING;
-
-extern const int BLACK;
-extern const int WHITE;
-
-extern const int THEME_DEFAULT;
-extern const int THEME_WOOD;
-
 typedef struct {
   int type; // 0 = empty, 1 = pawn, 2 = knight, etc.
   int color; // 0 = none, 1 = white, 2 = black
   int theme; // 0 = standard, 1 = wood
 } piece_t;
 
-struct square_t {
+typedef struct {
   piece_t piece;
   int column; // 0-7
   int row;    // 0-7
-};
+} square_t;
 
 typedef struct {
-  struct square_t squares[8][8];
+  square_t squares[8][8];
 } board_t;
+
+typedef struct {
+  int from_row;
+  int from_col;
+  int to_row;
+  int to_col;
+  piece_t moved_piece;
+  piece_t captured_piece; // type = EMPTY if no capture
+  int is_castling; // 1 = castling move, 0 = normal move
+  int is_en_passant; // 1 = en passant capture, 0 = normal move
+  int is_promotion; // 1 = pawn promotion, 0 = normal move
+  int promotion_piece; // piece type for promotion (if is_promotion = 1)
+} move_history_t;
 
 typedef struct {
   board_t board;
@@ -47,23 +43,16 @@ typedef struct {
   int selected_piece_row;
   int selected_piece_col;
   int possible_moves[8][8]; // 1 = possible move, 0 = not possible
+  move_history_t move_list[1024]; // Store up to 1024 moves; realistically this is more than enough
   input_state_t *input_state;
 } game_state_t;
 
 // Game state functions
-void update_state(SDL_Surface* screen);
+void update_state(SDL_Renderer* renderer);
 game_state_t* init_game_state(void);
 void cleanup_game_state(void);
-
-// Validation functions
-int is_valid_position(int row, int col);
-int is_valid_piece_type(int type);
-int is_valid_color(int color);
-int is_valid_theme(int theme);
-
-// Board manipulation functions
-piece_t* get_piece_at(board_t* board, int row, int col);
-int set_piece_at(board_t* board, int row, int col, piece_t piece);
-int clear_piece_at(board_t* board, int row, int col);
+int undo_last_move(void);
+void print_last_moves(int count);
+void print_help(void);
 
 #endif // GAME_H

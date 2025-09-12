@@ -6,10 +6,7 @@ LDFLAGS := $(shell sdl2-config --libs) -lSDL2_image
 SRC_FILES := src/engine.c src/game.c src/piece.c src/main.c src/renderer.c src/input.c src/resources.c
 
 # Target
-TARGET := out/chess
-
-# Create output directory if it doesn't exist
-$(shell mkdir -p out)
+TARGET := chess
 
 all: $(TARGET)
 

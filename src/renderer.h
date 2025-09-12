@@ -6,20 +6,19 @@
 #include "config.h"
 #include "resources.h"
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_surface.h>
 
 // Rendering functions
 ErrorCode init_renderer(void);
 void cleanup_renderer(void);
-void clear_screen(SDL_Surface *screen);
-void draw_background(SDL_Surface *screen);
-void draw_board(SDL_Surface *screen);
-void draw_piece(SDL_Surface *screen, int row, int col, piece_t* piece);
-void draw_possible_moves(SDL_Surface *screen, int possible_moves[BOARD_SIZE][BOARD_SIZE]);
-void draw_all_pieces(SDL_Surface *screen, board_t* board);
+void clear_screen(SDL_Renderer *renderer);
+void draw_background(SDL_Renderer *renderer);
+void draw_board(SDL_Renderer *renderer);
+void draw_piece(SDL_Renderer *renderer, int row, int col, piece_t* piece);
+void draw_possible_moves(SDL_Renderer *renderer, int possible_moves[BOARD_SIZE][BOARD_SIZE], board_t* board);
+void draw_all_pieces(SDL_Renderer *renderer, board_t* board);
 
 // Utility functions
-int get_cell_size(SDL_Surface *screen);
-SDL_Rect get_square_rect(SDL_Surface *screen, int row, int col);
+int get_cell_size(SDL_Renderer *renderer);
+SDL_Rect get_square_rect(SDL_Renderer *renderer, int row, int col);
 
 #endif // RENDERER_H

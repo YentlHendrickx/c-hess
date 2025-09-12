@@ -1,4 +1,4 @@
 #!/bin/bash
 
-make -B
-./out/chess
+make -B || exit 1
+./chess

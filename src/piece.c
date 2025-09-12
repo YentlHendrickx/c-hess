@@ -1,6 +1,23 @@
 #include "piece.h"
 
+const int EMPTY = 0;
+const int NONE = 0;
+
+const int PAWN = 1;
+const int KNIGHT = 2;
+const int ROOK = 3;
+const int BISHOP = 4;
+const int QUEEN = 5;
+const int KING = 6;
+
+const int WHITE = 1;
+const int BLACK = 2;
+
+const int THEME_DEFAULT = 0;
+const int THEME_WOOD = 1;
+
 void pawn_moves(piece_t piece, int start_row, int start_col, board_t *board,
+                move_history_t move_list[1024], int move_count,
                 int possible_moves[8][8]) {
   int direction = (piece.color == WHITE) ? -1 : 1; // White moves up, Black down
   int next_row = start_row + direction;
@@ -33,6 +50,22 @@ void pawn_moves(piece_t piece, int start_row, int start_col, board_t *board,
           diag_piece->color != piece.color) {
         possible_moves[next_row][diag_col] = 1;
       }
+    }
+  }
+
+  // En Passent based on history (not possible in less than 2 moves)
+  if (move_count <= 2) {
+    return;
+  }
+
+  move_history_t *last_move = &move_list[move_count - 1];
+  if (last_move->moved_piece.type == PAWN &&
+      abs(last_move->from_row - last_move->to_row) == 2 &&
+      last_move->to_row == start_row) {
+    // The opponent's pawn just moved two squares forward to the same row
+    if (abs(last_move->to_col - start_col) == 1) {
+      // The opponent's pawn is adjacent to our pawn
+      possible_moves[start_row + direction][last_move->to_col] = 1;
     }
   }
 }
@@ -132,14 +165,16 @@ void king_moves(piece_t piece, int start_row, int start_col, board_t *board,
   }
 }
 
-void get_allowed_moves(piece_t piece, int start_row, int start_col,
-                       board_t *board,
-                       int possible_moves[BOARD_SIZE][BOARD_SIZE]) {
-
-  int temp[BOARD_SIZE][BOARD_SIZE] = {0};
+void get_allowed_moves(game_state_t *game_state, int start_row, int start_col) {
+  piece_t piece = game_state->board.squares[start_row][start_col].piece;
+  board_t *board = &game_state->board;
+  move_history_t *move_list = game_state->move_list;
+  int move_count = game_state->move_count;
+  int (*possible_moves)[8] = game_state->possible_moves;
+  int temp[8][8] = {0};
 
   if (piece.type == PAWN) {
-    pawn_moves(piece, start_row, start_col, board, temp);
+    pawn_moves(piece, start_row, start_col, board, move_list, move_count, temp);
   } else if (piece.type == KNIGHT) {
     knight_moves(piece, start_row, start_col, board, temp);
   } else if (piece.type == BISHOP) {
@@ -161,4 +196,53 @@ void get_allowed_moves(piece_t piece, int start_row, int start_col,
       possible_moves[r][c] = temp[r][c];
     }
   }
+}
+
+/// Validation functions
+int is_valid_position(int row, int col) {
+  return (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE);
+}
+
+int is_valid_piece_type(int type) { return (type >= EMPTY && type <= KING); }
+
+int is_valid_color(int color) {
+  return (color == NONE || color == WHITE || color == BLACK);
+}
+
+int is_valid_theme(int theme) {
+  return (theme == THEME_DEFAULT || theme == THEME_WOOD);
+}
+
+/// Board manipulation functions
+piece_t *get_piece_at(board_t *board, int row, int col) {
+  if (!board || !is_valid_position(row, col)) {
+    return NULL;
+  }
+  return &board->squares[row][col].piece;
+}
+
+int set_piece_at(board_t *board, int row, int col, piece_t piece) {
+  if (!board || !is_valid_position(row, col)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  if (!is_valid_piece_type(piece.type) || !is_valid_color(piece.color) ||
+      !is_valid_theme(piece.theme)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  board->squares[row][col].piece = piece;
+  return ERROR_NONE;
+}
+
+int clear_piece_at(board_t *board, int row, int col) {
+  if (!board || !is_valid_position(row, col)) {
+    return ERROR_INVALID_INPUT;
+  }
+
+  board->squares[row][col].piece.type = EMPTY;
+  board->squares[row][col].piece.color = NONE;
+  board->squares[row][col].piece.theme = THEME_DEFAULT;
+
+  return ERROR_NONE;
 }
